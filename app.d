@@ -1,29 +1,19 @@
+#!opend -run app.d
 import std.stdio;
 import raylib;
-import stringoverloads;
 
-void main()
-{
-	writeln("Starting a raylib example.");
+void main(){
 	validateRaylibBinding();
-	string hello="Hello, World!";
-	InitWindow(800, 640, hello);
+	InitWindow(800, 640, cast(string)"raylib");
 	SetTargetFPS(60);
-	scope (exit)
-		CloseWindow(); // see https://dlang.org/spec/statement.html#scope-guard-statement
-
-	while (!WindowShouldClose())
-	{
+	while (!WindowShouldClose()){
 		BeginDrawing();
-		scope (exit)
-			EndDrawing();
-
-		ClearBackground(RAYWHITE);
-		foreach(i;0..3){
-			hello~='!';
-		}
-		DrawText(hello, 330, 300, 28, BLACK);
+		ClearBackground(BLACK);
+		DrawText("hello", 330, 300, 28, WHITE);
+		string bye="bye";
+		bye~='!';
+		DrawText(bye, 330, 400, 28, WHITE);
+		EndDrawing();
 	}
-
-	writeln("Ending a raylib example.");
+	CloseWindow();
 }
