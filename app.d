@@ -1,4 +1,4 @@
-#!opend -run app.d
+#!opend -run
 import std.stdio;
 import raylib;
 
