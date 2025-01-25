@@ -36,9 +36,10 @@ void main(string[] envArgs) {
             if (i % 2 == 1) input ~= (token[$ - 1] == ',' ? token[0 .. $ - 1] : token) ~ ", ";
         }
         input ~= ")";
-        auto target = "auto %s(STRING: string)%s => odc.raylib.%s;".format(
+        auto target = "auto %s(STRING: string)%s => odc.raylib.%s%s;".format(
             name,
             args.replace("const(char)*", "STRING"),
+            name,
             input,
         );
         writeln(target);
