@@ -2,7 +2,8 @@
 
 import std;
 
-enum blackList = [
+enum namespace = "odc.raylib";
+enum blacklist = [
     "const(char*)*",
     "Callback =",
 ];
@@ -17,7 +18,7 @@ void main(string[] envArgs) {
         if (line.startsWith("/")) continue;
         if (!line.canFind("const(char)*")) continue;
         auto isInBlackList = false;
-        foreach (item; blackList) {
+        foreach (item; blacklist) {
             if (line.canFind(item)) {
                 isInBlackList = true;
                 break;
@@ -32,13 +33,19 @@ void main(string[] envArgs) {
         auto name = line[line[0 .. parenIndex].countUntil(' ') + 1 .. parenIndex];
         auto args = line[parenIndex .. parenIndex + line[parenIndex .. $].countUntil(';')];
         auto input = "(";
-        foreach (i, token; args[1 .. $ - 1].split(' ')) {
-            if (i % 2 == 1) input ~= (token[$ - 1] == ',' ? token[0 .. $ - 1] : token) ~ ", ";
+        auto argTokens = args[1 .. $ - 1].split(' ');
+        foreach (i, token; argTokens) {
+            if (i % 2 == 1) {
+                input ~= (token[$ - 1] == ',' ? token[0 .. $ - 1] : token);
+                if (argTokens[i - 1] == "const(char)*") input ~= ".toStringz()";
+                if (i != argTokens.length - 1) input ~= ", ";
+            }
         }
         input ~= ")";
-        auto target = "auto %s(STRING: string)%s => odc.raylib.%s%s;".format(
+        auto target = "auto %s(STRING: string)%s => %s.%s%s;".format(
             name,
             args.replace("const(char)*", "STRING"),
+            namespace,
             name,
             input,
         );
