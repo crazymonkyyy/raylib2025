@@ -1,37 +1,54 @@
+#!/bin/env -S dmd -i -run
+
 import std;
-enum charstar="const(char)*";
-void main(){
-	foreach(s;File("raylib/package.d").byLineCopy){
-		if(s.canFind(charstar)){
-			if(s.canFind("Callback =")){
-				continue;
-			}
-			auto space=s.countUntil(' ');
-			auto semi=s.countUntil(';');
-			auto parn=s[space..$].countUntil('(');
-			string func=s[space+1..parn+space];
-			//func.writeln;
-			string[] args=s[parn+space+1..semi-1].split(",").map!strip.array;
-			//args.writeln;
-			string header="auto "~func~"(STRING:string)(";
-			string body_="=>raylib."~func~'(';
-			foreach(a;args){
-				auto space2=a.countUntil(' ');
-				if(space2==-1){continue;}
-				if(a.canFind(charstar)){
-					header~="STRING";
-					header~=a[space2..$];
-					body_~=a[space2..$]~".toStringz";
-				} else {
-					header~=a;
-					body_~=a[space2..$];
-				}
-				header~=",";
-				body_~=",";
-			}
-			header~=")";
-			body_~=");";
-			writeln("//",s);
-			writeln("//",func,args);
-			writeln(header,body_);
-}}}
+
+enum namespace = "odc.raylib";
+enum blacklist = [
+    "const(char*)*",
+    "Callback =",
+];
+
+void main(string[] envArgs) {
+    if (envArgs.length == 1) {
+        writeln("Usage: app ./raylib.d");
+        return;
+    }
+    auto raylibPath = envArgs[1];
+    foreach (line; File(raylibPath).byLineCopy) {
+        if (line.startsWith("/")) continue;
+        if (!line.canFind("const(char)*")) continue;
+        auto isInBlackList = false;
+        foreach (item; blacklist) {
+            if (line.canFind(item)) {
+                isInBlackList = true;
+                break;
+            }
+        }
+        if (isInBlackList) continue;
+
+        auto parenIndex = line.countUntil('(');
+        if (line[0 .. parenIndex].endsWith("const")) {
+            parenIndex += line[parenIndex + 1 .. $].countUntil('(') + 1;
+        }
+        auto name = line[line[0 .. parenIndex].countUntil(' ') + 1 .. parenIndex];
+        auto args = line[parenIndex .. parenIndex + line[parenIndex .. $].countUntil(';')];
+        auto input = "(";
+        auto argTokens = args[1 .. $ - 1].split(' ');
+        foreach (i, token; argTokens) {
+            if (i % 2 == 1) {
+                input ~= (token[$ - 1] == ',' ? token[0 .. $ - 1] : token);
+                if (argTokens[i - 1] == "const(char)*") input ~= ".toStringz()";
+                if (i != argTokens.length - 1) input ~= ", ";
+            }
+        }
+        input ~= ")";
+        auto target = "auto %s(STRING: string)%s => %s.%s%s;".format(
+            name,
+            args.replace("const(char)*", "STRING"),
+            namespace,
+            name,
+            input,
+        );
+        writeln(target);
+    }
+}
